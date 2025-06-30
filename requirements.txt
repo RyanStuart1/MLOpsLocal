@@ -4,6 +4,7 @@ scikit-learn
 joblib
 requests
 xgboost
+seaborn
 
 # MLOps
 mlflow>=2.0
