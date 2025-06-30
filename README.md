@@ -15,6 +15,15 @@
 >pip install -r requirements.txt
 >```
 
+>[!CAUTION]
+>If flow.py fails to run, simply run the script from the root.
+>### Commands to run pipeline
+>```bash
+>set PYTHONPATH=%cd%
+>python pipeline\flow.py
+>```
+
+
 ```
 MlOpsLocal/
 ├── .venv/                 # Virtual environment
