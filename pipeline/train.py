@@ -1,10 +1,15 @@
 def train_model():
+    import os    
     import pandas as pd
     import mlflow
     import joblib
     from sklearn.linear_model import LogisticRegression
     from preprocess import preprocess_data
     from evaluate import evaluate_model
+
+    # Creates missing directories if they do not exist
+    os.makedirs("models", exist_ok=True)
+    os.makedirs("mlruns", exist_ok=True)
 
     # Load data
     df = pd.read_csv("data/synthetic_credit_risk.csv")
