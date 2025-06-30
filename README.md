@@ -1,20 +1,20 @@
 # MLOpsLocal
 
-[note!]
+>[!NOTE]
+>
+>## Useful Commands for Setup & Usage
+>
+>To get started with this MLOps pipeline, here are the essential commands:
+>
+>###
+>
+>###  Set up the environment
+>```bash
+>python -m venv .venv  
+>.venv\Scripts\activate on Windows
+>pip install -r requirements.txt
+>```
 
-## Useful Commands for Setup & Usage
-
-To get started with this MLOps pipeline, here are the essential commands:
-
-###
-
-###  Set up the environment
-```bash
-python -m venv .venv  
-.venv\Scripts\activate on Windows
-pip install -r requirements.txt
-
-```
 ```
 MlOpsLocal/
 ├── .venv/                 # Virtual environment
