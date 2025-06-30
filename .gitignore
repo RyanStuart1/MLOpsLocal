@@ -1,0 +1,44 @@
+# 🐍 Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.log
+
+# 🛠 Virtual environment
+.venv/
+env/
+venv/
+
+# 📦 Package management
+pip-wheel-metadata/
+
+# 🧪 Testing artifacts
+htmlcov/
+coverage.*
+.cache/
+pytest_cache/
+
+# 📊 MLflow & model artifacts
+mlruns/
+models/*.pkl
+models/*.joblib
+
+# 📁 Data (if it's generated or sensitive)
+data/*.parquet
+data/*.xlsx
+
+# 🚫 OS-specific
+.DS_Store
+Thumbs.db
+
+# 🧠 Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# ⚙️ VSCode settings
+.vscode/
+
+# 🔧 Streamlit cache
+.streamlit/

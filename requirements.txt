@@ -1,0 +1,19 @@
+# Core
+pandas
+scikit-learn
+joblib
+requests
+
+# MLOps
+mlflow>=2.0
+prefect>=2.0
+
+# API Server
+fastapi
+uvicorn[standard]
+
+# Dashboard (optional)
+streamlit
+
+# Dev/Optional
+python-dotenv
