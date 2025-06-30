@@ -23,6 +23,16 @@
 >python pipeline\flow.py
 >```
 
+>[!IMPORTATNT]
+>Below are useful commands for running MLFLOW UI, PREFECT and STREAMLIT
+>
+>```bash
+>mlflow ui --port 7000
+>
+>prefect server start
+>
+>streamlit run dashboard/app.py
+>```
 
 ```
 MlOpsLocal/

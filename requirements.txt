@@ -3,6 +3,7 @@ pandas
 scikit-learn
 joblib
 requests
+xgboost
 
 # MLOps
 mlflow>=2.0
