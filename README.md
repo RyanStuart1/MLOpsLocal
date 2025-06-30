@@ -23,7 +23,7 @@
 >python pipeline\flow.py
 >```
 
->[!IMPORTATNT]
+>[!IMPORTANT]
 >Below are useful commands for running MLFLOW UI, PREFECT and STREAMLIT
 >
 >```bash
