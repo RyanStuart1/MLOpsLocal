@@ -48,7 +48,8 @@ def train_model():
     xgb = XGBClassifier(
         use_label_encoder=False,
         eval_metric='logloss',
-        random_state=42
+        random_state=42,
+        n_jobs=-1, 
     )
 
     # Grid search
