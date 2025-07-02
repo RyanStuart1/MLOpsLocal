@@ -20,6 +20,7 @@ htmlcov/
 coverage.*
 .cache/
 pytest_cache/
+artifacts
 
 # 📊 MLflow & model artifacts
 mlruns/
@@ -34,11 +35,9 @@ data/*.xlsx
 .DS_Store
 Thumbs.db
 
-# 🧠 Jupyter Notebook checkpoints
-.ipynb_checkpoints/
-
 # ⚙️ VSCode settings
 .vscode/
 
 # 🔧 Streamlit cache
 .streamlit/
+

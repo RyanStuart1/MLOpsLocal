@@ -2,6 +2,7 @@ def train_model():
     import os    
     import pandas as pd
     import mlflow
+    from mlflow.models.signature import infer_signature
     import joblib
     from sklearn.linear_model import LogisticRegression
     from sklearn.model_selection import GridSearchCV
@@ -78,10 +79,20 @@ def train_model():
         mlflow.log_params(model.get_params())  # Logs all hyperparameters
         mlflow.log_metric("accuracy", metrics["accuracy"])
         mlflow.log_metric("roc_auc", metrics["roc_auc"])
-        mlflow.sklearn.log_model(model, "model")
+
+        input_example = x_test[:1]
+        signature = infer_signature(x_test, model.predict(x_test))
+        
+        mlflow.sklearn.log_model(
+            sk_model=model, 
+            artifact_path="model", 
+            registered_model_name="credit-risk-model", 
+            input_example=input_example, 
+            signature=signature
+        ) # Model registry
 
         # Log confusion matrix
-        log_confusion_matrix(model, x_test, y_test)
+        log_confusion_matrix(model, x_test, y_test, save_local=True)
         
     # Save model locally
     joblib.dump(model, "models/model.pkl")
