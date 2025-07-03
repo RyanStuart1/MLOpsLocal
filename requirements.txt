@@ -5,6 +5,7 @@ joblib
 requests
 xgboost
 seaborn
+evidently
 
 # MLOps
 mlflow>=2.0

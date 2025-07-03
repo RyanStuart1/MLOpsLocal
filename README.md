@@ -31,7 +31,7 @@
 >
 >prefect server start
 >
->streamlit run dashboard/app.py
+>streamlit run streamlit_app.py
 >```
 
 ```
