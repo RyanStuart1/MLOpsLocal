@@ -21,6 +21,7 @@ coverage.*
 .cache/
 pytest_cache/
 artifacts
+reports
 
 # 📊 MLflow & model artifacts
 mlruns/
