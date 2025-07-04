@@ -8,6 +8,7 @@ This dashboard helps you:
 - Predict loan default risk
 - View model performance metrics
 - Explore insights about the dataset and model
+- Stream and Batch Model monitoring 
 
 Use the sidebar to navigate between pages.
 """)

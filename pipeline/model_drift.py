@@ -6,6 +6,7 @@ from prefect import task
 import pandas as pd
 import os
 
+# batch drift
 def calculate_psi(expected, actual, buckets=10):
     breakpoints = np.linspace(0, 100, buckets + 1)
     expected_perc = np.percentile(expected, breakpoints)
@@ -45,3 +46,5 @@ def run_data_drift_check(reference_path, current_path, output_path):
     result.save_html(output_path)
 
     return output_path
+
+#stream drift

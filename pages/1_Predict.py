@@ -32,6 +32,6 @@ input_data = np.array([[age, credit_score, loan_amount, loan_term_months,
                         employment_length, annual_income, dti,
                         open_accounts, delinquencies]])
 
-if st.button("📌 Predict Risk"):
+if st.button("Predict Risk"):
     prediction = model.predict(input_data)[0]
     st.success("✅ Low Risk" if prediction == 0 else "⚠️ High Risk: Likely Default")
