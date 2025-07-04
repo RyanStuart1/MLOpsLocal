@@ -35,6 +35,14 @@
 >```
 
 > ## Prefect Deployment
+> The snippet below is used in ps1 to follow by "N" to use local storage and "Y" to create a yaml for deployment.
+>```bash
+>prefect deploy .\pipeline\flow.py:credit_risk_pipeline `
+>  --name weekly-credit-risk `
+>  --cron "0 9 * * 1" `
+>  --timezone "UTC" `
+>  --pool default
+>```
 > Verify the correct repository is being used for the pull request
 > ```bash
 > pull:
