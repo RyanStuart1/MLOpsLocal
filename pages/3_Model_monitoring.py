@@ -134,7 +134,7 @@ else:
         else:
             st.info("Select at least one feature to visualize.")
 
-st.title("Data Drift (evidently)")
+st.title("Data Drift (evidently) Batch processing")
 
 if st.button("Run pipeline & refresh report"):
     # this will execute your Prefect flow locally

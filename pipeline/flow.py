@@ -6,7 +6,7 @@ from pipeline.model_drift import run_data_drift_check
 def run_training():
     return train_model()
 
-@flow
+@flow(name="credit_risk_pipeline")
 def credit_risk_pipeline():
     run_training()
     drift_report_path = run_data_drift_check(
