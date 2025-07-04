@@ -78,5 +78,6 @@
 >├── .gitignore             # Git ignore rules
 >├── prefect.yaml           # Prefect deployment config
 >├── README.md              # Project documentation
->└── requirements.txt       # Python dependencies
+>├── requirements.txt       # Python dependencies
+>└── streamlit_app.py       # Streamlit app host
 >```
