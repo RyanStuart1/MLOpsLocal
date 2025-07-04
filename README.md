@@ -57,25 +57,26 @@
 >prefect worker start --pool default
 >```
 
-```
-MlOpsLocal/
-├── .venv/                 # Virtual environment
-├── pages/                 # Streamlit dashboard
-│   ├── 1_Predict.py
-│   ├── 2_Model_insights.py
-│   └── 3_Model_monitoring.py
-├── data/                  # CSV datasets
-│   └── data.csv
-├── mlruns/                # MLflow tracking directory
-├── models/                # Trained model artifacts
-├── pipeline/              # Core pipeline scripts
-│   ├── flow.py            # Prefect orchestration
-│   ├── train.py           # Model training
-│   ├── evaluate.py        # Model evaluation
-│   ├── preprocess.py      # Feature engineering
-│   └── model_drift.py     # Drift monitoring
-├── .gitignore             # Git ignore rules
-├── prefect.yaml           # Prefect deployment config
-├── README.md              # Project documentation
-└── requirements.txt       # Python dependencies
-```
+> ## Project Structure
+>```
+>MlOpsLocal/
+>├── .venv/                 # Virtual environment
+>├── pages/                 # Streamlit dashboard
+>│   ├── 1_Predict.py
+>│   ├── 2_Model_insights.py
+>│   └── 3_Model_monitoring.py
+>├── data/                  # CSV datasets
+>│   └── data.csv
+>├── mlruns/                # MLflow tracking directory
+>├── models/                # Trained model artifacts
+>├── pipeline/              # Core pipeline scripts
+>│   ├── flow.py            # Prefect orchestration
+>│   ├── train.py           # Model training
+>│   ├── evaluate.py        # Model evaluation
+>│   ├── preprocess.py      # Feature engineering
+>│   └── model_drift.py     # Drift monitoring
+>├── .gitignore             # Git ignore rules
+>├── prefect.yaml           # Prefect deployment config
+>├── README.md              # Project documentation
+>└── requirements.txt       # Python dependencies
+>```
