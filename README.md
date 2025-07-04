@@ -51,15 +51,6 @@
 >    branch: main
 >    directory: .
 >```
-> Schedule the time and day for deployment
->```bash
->   prefect deployment build \
->   pipeline/flow.py:credit_risk_pipeline \
->   --name weekly-credit-risk \
->   --cron "0 9 * * 1" \
->   --timezone UTC \
->   --apply
->```
 > Prefect workers are used to execute scheduled tasks
 >```bash
 >prefect worker start --pool default
