@@ -55,6 +55,12 @@
 >```bash
 >prefect worker start --pool default
 >```
+> ### Test pipeline 
+> Ensure you are in the .venv (cmd) and run the command below to run the pipeline immediately
+>```bash
+>e.g. prefect deployment run <entrypoint>/<name>
+> prefect deployment run credit-risk-pipeline/weekly-credit-risk
+>```
 
 > ## Project Structure
 >```
