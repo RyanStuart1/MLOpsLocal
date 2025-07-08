@@ -1,51 +1,90 @@
 import os
 import tempfile
 import matplotlib.pyplot as plt
-import mlflow.tracking
+from mlflow.tracking import MlflowClient
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
 import mlflow
 
-def log_confusion_matrix(model, x_test, y_test, save_local=True):
-    preds = model.predict(x_test)
-    cm = confusion_matrix(y_test, preds)
+def log_confusion_matrix(
+    model,
+    x,
+    y,
+    save_local: bool = True,
+    name: str = "confusion_matrix"
+):
+    """
+    Compute & log a confusion matrix for dataset (x, y).
 
-    # Plot confusion matrix
+    Parameters:
+    - model: The trained model with a .predict method.
+    - x: Features DataFrame
+    - y: True labels.
+    - save_local: Whether to save a local copy under artifacts/.
+    - name: Prefix for the saved artifact (e.g. "confusion_matrix_val.png", "confusion_matrix_test.png").
+    """
+    # Generate predictions and compute the confusion matrix
+    preds = model.predict(x)
+    cm = confusion_matrix(y, preds)
+
+    # Create the plot
     plt.figure(figsize=(6, 4))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
-                xticklabels=["No Default", "Default"],
-                yticklabels=["No Default", "Default"])
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=["No Default", "Default"],
+        yticklabels=["No Default", "Default"]
+    )
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
-    plt.title("Confusion Matrix")
+    plt.title(name.replace('_', ' ').title())
 
-    # Save and log to MLflow using temp dir
+    # Log to MLflow artifact
+    artifact_dir = "confusion_matrices"
     with tempfile.TemporaryDirectory() as tmpdir:
-        save_path = os.path.join(tmpdir, "confusion_matrix.png")
-        plt.savefig(save_path)
-        mlflow.log_artifact(save_path)
+        tmp_path = os.path.join(tmpdir, f"{name}.png")
+        plt.savefig(tmp_path, bbox_inches="tight")
+        mlflow.log_artifact(tmp_path, artifact_path=artifact_dir)
 
-    # Optional: also save locally for Streamlit
+    # Optionally save locally for Streamlit or other use
     if save_local:
-        os.makedirs("artifacts", exist_ok=True)
-        local_path = "artifacts/confusion_matrix.png"
-        plt.savefig(local_path, dpi=200)
+        local_dir = os.path.join("artifacts", artifact_dir)
+        os.makedirs(local_dir, exist_ok=True)
+        local_path = os.path.join(local_dir, f"{name}.png")
+        plt.savefig(local_path, dpi=200, bbox_inches="tight")
 
     plt.close()
 
-def get_model_metrics():
-    client = mlflow.tracking.MlflowClient()
-    experiment = client.get_experiment_by_name("credit-risk")
 
-    if experiment is None:
+def get_model_metrics(registered_model_name: str = "credit-risk-model"):
+    """
+    Returns a dict with the four metrics for the latest registered version
+    of `registered_model_name`.  If nothing is found, returns None.
+    """
+    client = MlflowClient()
+    # find all versions for this registered model
+    try:
+        all_versions = client.search_model_versions(f"name='{registered_model_name}'")
+    except Exception:
         return None
-    
-    runs = client.search_runs(experiment.experiment_id, order_by=["start_time DESC"], max_results=1)
-    if not runs:
+
+    if not all_versions:
         return None
-    
-    runs = runs[0]
+
+    # pick the most recent model version / run
+    latest = max(all_versions, key=lambda v: int(v.version))
+    run_id = latest.run_id
+
+    # fetch the most recent model version / run
+    run = client.get_run(run_id)
+    metrics   = run.data.metrics
+
+    # 4) return exactly the four metrics from train.py
     return {
-        "accuracy": runs.data.metrics.get("accuracy"),
-        "roc_auc": runs.data.metrics.get("roc_auc")
+        "val_accuracy":  metrics.get("val_accuracy"),
+        "val_roc_auc":   metrics.get("val_roc_auc"),
+        "test_accuracy": metrics.get("test_accuracy"),
+        "test_roc_auc":  metrics.get("test_roc_auc"),
     }

@@ -6,7 +6,7 @@ import os
 # Load trained model
 model_path = "models/model.pkl"
 if not os.path.exists(model_path):
-    st.error("❌ model.pkl not found. Please run your training pipeline first.")
+    st.error("model.pkl not found. Please run your training pipeline first.")
     st.stop()
 
 model = joblib.load(model_path)

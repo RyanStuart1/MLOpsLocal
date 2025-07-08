@@ -20,13 +20,15 @@ def train_model():
     df = pd.read_csv("data/synthetic_credit_risk.csv")
 
     # Preprocess: split into train/test sets
-    x_train, x_test, y_train, y_test = preprocess_data(df)
+    x_train, x_val, x_test, y_train, y_val, y_test = preprocess_data(df)
 
     # Save training sample for drift reference
     x_train.to_csv("artifacts/train_features_sample.csv", index=False)
 
     # Save test sample as simulated inference input
     x_test.to_csv("artifacts/prediction_input_sample.csv", index=False)
+
+    x_val.to_csv("artifacts/validation_set_sample.csv", index=False)
 
     # Define hyperparameter grid
     param_grid = {
@@ -53,47 +55,54 @@ def train_model():
         verbose=1,
         n_jobs=-1
     )
-    grid_search.fit(x_train, y_train)
+
+    fit_params = {"eval_set": [(x_val, y_val)], "verbose": False}
+    grid_search.fit(x_train, y_train, **fit_params)
     model = grid_search.best_estimator_
 
-    print("Best hyperparameters from GridSearchCV:")
-    print(grid_search.best_params_)
+    print("Best hyperparameters from GridSearchCV:", grid_search.best_params_)
 
     # Evaluate model
-    metrics = evaluate_model(model, x_test, y_test)
+    val_metrics = evaluate_model(model, x_val, y_val)
+    test_metrics = evaluate_model(model, x_test, y_test)
 
     # Log everything with MLflow
     mlflow.set_experiment("credit-risk")
     with mlflow.start_run():
         mlflow.log_param("model", "XGBoost")  # Optional: for tagging model name
         mlflow.log_params(grid_search.best_params_)  # Logs best hyperparameters
-        mlflow.log_metric("accuracy", metrics["accuracy"])
-        mlflow.log_metric("roc_auc", metrics["roc_auc"])
+
+        mlflow.log_metric("val_accuracy", val_metrics["accuracy"])
+        mlflow.log_metric("val_roc_auc", val_metrics["roc_auc"])
+
+        mlflow.log_metric("test_accuracy", test_metrics["accuracy"])
+        mlflow.log_metric("test_roc_auc", test_metrics["roc_auc"])
 
         # New: Log dataset statistics
         mlflow.log_param("n_total_rows", len(df))
-        mlflow.log_param("train_size", len(x_train))
-        mlflow.log_param("test_size", len(x_test))
-        mlflow.log_metric("train_class_0_ratio", (y_train == 0).mean())
-        mlflow.log_metric("train_class_1_ratio", (y_train == 1).mean())
-        mlflow.log_metric("test_class_0_ratio", (y_test == 0).mean())
-        mlflow.log_metric("test_class_1_ratio", (y_test == 1).mean())
+        mlflow.log_param("train_size",    len(x_train))
+        mlflow.log_param("val_size",      len(x_val))
+        mlflow.log_param("test_size",     len(x_test))
 
-        input_example = x_test[:1]
-        signature = infer_signature(x_test, model.predict(x_test))
-        
-        # Model registry
+        # Register the final model
+        input_example = x_test.head(1)
+        signature     = infer_signature(x_test, model.predict(x_test))
         mlflow.sklearn.log_model(
-            sk_model=model, 
-            name="model", 
-            registered_model_name="credit-risk-model", 
-            input_example=input_example, 
+            sk_model=model,
+            name="model",
+            registered_model_name="credit-risk-model",
+            input_example=input_example,
             signature=signature
-        ) 
+        )
+
 
         # Log confusion matrix
-        log_confusion_matrix(model, x_test, y_test, save_local=True)
+        log_confusion_matrix(model, x_test, y_test, save_local=True, name="confusion_matrix_test")
+        log_confusion_matrix(model, x_val, y_val, save_local=True, name="confusion_matrix_val")
         
     # Save model locally in pkl file
     joblib.dump(model, "models/model.pkl")
-    print(f"Model trained and saved. Accuracy: {metrics['accuracy']:.4f}")
+    print(f"Model trained and saved. Test Accuracy: {test_metrics['accuracy']:.4f}")
+    print(f"Model trained and saved. Validation Accuracy: {val_metrics['accuracy']:.4f}")
+
+    return model
