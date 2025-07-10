@@ -6,6 +6,7 @@ requests
 xgboost
 seaborn
 evidently
+openai
 
 # MLOps
 mlflow>=2.0

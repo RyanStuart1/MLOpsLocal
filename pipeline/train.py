@@ -1,4 +1,4 @@
-def train_model():
+def train_model(data_path: str = "data/synthetic_credit_risk.csv"):
     import os    
     import pandas as pd
     import mlflow
@@ -17,7 +17,7 @@ def train_model():
     os.makedirs("artifacts", exist_ok=True)
 
     # Load data
-    df = pd.read_csv("data/synthetic_credit_risk.csv")
+    df = pd.read_csv(data_path)
 
     # Preprocess: split into train/test sets
     x_train, x_val, x_test, y_train, y_val, y_test = preprocess_data(df)
