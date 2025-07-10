@@ -11,7 +11,7 @@ __pycache__/
 .venv/
 env/
 venv/
-.env/
+.env
 
 # 📦 Package management
 pip-wheel-metadata/
