@@ -2,6 +2,7 @@ import streamlit as st
 import joblib
 import numpy as np
 import os
+from pipeline.chatbot import show_chatbot_sidebar
 
 # Load trained model
 model_path = "models/model.pkl"
@@ -35,3 +36,5 @@ input_data = np.array([[age, credit_score, loan_amount, loan_term_months,
 if st.button("Predict Risk"):
     prediction = model.predict(input_data)[0]
     st.success("✅ Low Risk" if prediction == 0 else "⚠️ High Risk: Likely Default")
+
+show_chatbot_sidebar()

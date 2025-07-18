@@ -6,6 +6,7 @@ import os
 import seaborn as sns
 from pipeline.model_drift import calculate_psi, ks_test_pvalue
 from pipeline.flow import credit_risk_pipeline
+from pipeline.chatbot import show_chatbot_sidebar
 import streamlit.components.v1 as components
 import math
 
@@ -96,7 +97,6 @@ ref_df = df.drop(columns=["target"]) if "target" in df.columns else df.copy()
 pred_path = "artifacts/prediction_input_sample.csv"
 if os.path.exists(pred_path):
     new_df = pd.read_csv(pred_path)
-    st.success("Comparing with latest prediction input sample.")
 else:
     new_df = ref_df.sample(frac=1.0, random_state=42)
     st.warning("No prediction input sample found. Using shuffled training data as placeholder.")
@@ -113,80 +113,80 @@ if not common_features:
 selected_features = st.multiselect(
     "Select features to inspect for drift",
     common_features,
-    default=[common_features[0]],
     key="drift_features"
 )
 
-if not selected_features:
+if selected_features:
+
+    # Compute drift statistics
+    drift_stats = []
+    for feature in selected_features:
+        psi   = calculate_psi(ref_df[feature], new_df[feature])
+        ks_p  = ks_test_pvalue(ref_df[feature], new_df[feature])
+        if psi > 0.2 or ks_p < 0.05:
+            status = "Drift Detected"
+        elif psi > 0.1:
+            status = "Moderate Drift"
+        else:
+            status = "No Drift"
+        drift_stats.append({
+            "feature":    feature,
+            "PSI":        f"{psi:.4f}",
+            "KS p-value": f"{ks_p:.4f}",
+            "status":     status
+        })
+
+    # Build summary DataFrame
+    stats_df = pd.DataFrame(drift_stats).set_index("feature")
+
+    # Display summary table at top
+    st.subheader("Drift Summary")
+    st.dataframe(stats_df, use_container_width=True)
+
+    # Plot all selected features in a grid
+    n_feats = len(selected_features)
+    ncols   = 2
+    nrows   = math.ceil(n_feats / ncols)
+
+    fig, axes = plt.subplots(
+        nrows=nrows,
+        ncols=ncols,
+        figsize=(ncols * 5, nrows * 3),
+        constrained_layout=True
+    )
+    axes = axes.flatten()
+
+    for ax, feature in zip(axes, selected_features):
+        sns.kdeplot(
+            ref_df[feature],
+            ax=ax,
+            label="Training (Ref)",
+            color="skyblue",
+            fill=False
+        )
+        sns.kdeplot(
+            new_df[feature],
+            ax=ax,
+            label="Latest Input",
+            color="salmon",
+            fill=False
+        )
+        ax.set_title(feature, fontsize=12)
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+        ax.legend(fontsize=8)
+
+    # Remove any unused subplots
+    for ax in axes[n_feats:]:
+        fig.delaxes(ax)
+
+    # Render the grid of plots
+        st.pyplot(fig)
+else:
     st.info("Select at least one feature to visualize.")
-    st.stop()
-
-# Compute drift statistics
-drift_stats = []
-for feature in selected_features:
-    psi   = calculate_psi(ref_df[feature], new_df[feature])
-    ks_p  = ks_test_pvalue(ref_df[feature], new_df[feature])
-    if psi > 0.2 or ks_p < 0.05:
-        status = "Drift Detected"
-    elif psi > 0.1:
-        status = "Moderate Drift"
-    else:
-        status = "No Drift"
-    drift_stats.append({
-        "feature":    feature,
-        "PSI":        f"{psi:.4f}",
-        "KS p-value": f"{ks_p:.4f}",
-        "status":     status
-    })
-
-# Build summary DataFrame
-stats_df = pd.DataFrame(drift_stats).set_index("feature")
-
-# Display summary table at top
-st.subheader("Drift Summary")
-st.dataframe(stats_df, use_container_width=True)
-
-# Plot all selected features in a grid
-n_feats = len(selected_features)
-ncols   = 2
-nrows   = math.ceil(n_feats / ncols)
-
-fig, axes = plt.subplots(
-    nrows=nrows,
-    ncols=ncols,
-    figsize=(ncols * 5, nrows * 3),
-    constrained_layout=True
-)
-axes = axes.flatten()
-
-for ax, feature in zip(axes, selected_features):
-    sns.kdeplot(
-        ref_df[feature],
-        ax=ax,
-        label="Training (Ref)",
-        color="skyblue",
-        fill=False
-    )
-    sns.kdeplot(
-        new_df[feature],
-        ax=ax,
-        label="Latest Input",
-        color="salmon",
-        fill=False
-    )
-    ax.set_title(feature, fontsize=12)
-    ax.set_xlabel("")
-    ax.set_ylabel("")
-    ax.legend(fontsize=8)
-
-# Remove any unused subplots
-for ax in axes[n_feats:]:
-    fig.delaxes(ax)
-
-# Render the grid of plots
-st.pyplot(fig)
-
 # html drift
+
+st.markdown("---")
 st.title("Data Drift (evidently) Batch processing")
 
 if st.button("Run pipeline & refresh report"):
@@ -200,3 +200,5 @@ if st.button("Run pipeline & refresh report"):
     components.html(drift_html, height=800, scrolling=True)
 else:
     st.info("Click the button to run the pipeline and view the latest drift report.")
+
+show_chatbot_sidebar()
