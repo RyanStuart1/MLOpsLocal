@@ -7,6 +7,8 @@ xgboost
 seaborn
 evidently
 openai
+fpdf
+shap
 
 # MLOps
 mlflow>=2.0
