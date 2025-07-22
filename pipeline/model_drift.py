@@ -6,6 +6,7 @@ from prefect import task
 import pandas as pd
 import os
 import json
+import tempfile
 
 # batch drift
 def calculate_psi(expected, actual, buckets=10):
@@ -83,34 +84,46 @@ def run_data_drift_check(reference_path, current_path, output_path):
     # Return path to HTML report
     return output_path
 
-def has_significant_drift(
-    reference_df: pd.DataFrame,
-    current_df: pd.DataFrame,
-    psi_thresh: float = 0.2,
-    ks_thresh: float = 0.05
-) -> list:
+def has_significant_drift(reference_df, current_df) -> list:
     """
-    Check drift across numeric features using PSI and KS test.
-
-    Returns:
-        A list of (feature, psi_value, ks_p_value) tuples where drift is significant.
+    Uses Evidently under the hood via run_data_drift_check():
+    • writes CSVs into a temp dir
+    • runs the Evidently preset (which writes artifacts/drift_summary.json + HTML)
+    • parses and returns [(col, share, share)] for each drifted feature
     """
-    numeric_cols = reference_df.select_dtypes(include="number").columns
-    drifted_features = []
+    drifted = []
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # serialize the two snapshots
+        ref_path  = os.path.join(tmpdir, "ref.csv")
+        curr_path = os.path.join(tmpdir, "curr.csv")
+        reference_df.to_csv(ref_path, index=False)
+        current_df.to_csv(curr_path, index=False)
 
-    for feature in numeric_cols:
-        if feature not in current_df.columns:
-            continue
-        expected = reference_df[feature].dropna()
-        actual = current_df[feature].dropna()
+        # run the Evidently drift check task
+        # you might want to point HTML somewhere permanent,
+        # e.g. "artifacts/drift_report.html"
+        run_data_drift_check(
+            reference_path=ref_path,
+            current_path=curr_path,
+            output_path="artifacts/drift_report.html"
+        )
 
-        if len(expected) < 10 or len(actual) < 10:
-            continue  # skip unstable small samples
+        # load the resulting JSON summary
+        with open("artifacts/drift_summary.json", "r") as r:
+            summary = json.load(r)
 
-        psi = calculate_psi(expected, actual)
-        ks_p = ks_test_pvalue(expected, actual)
+        # extract any ValueDrift columns where drift_detected==True
+        for m in summary.get("metrics", []):
+            if not m.get("metric_id", "").startswith("ValueDrift"):
+                continue
 
-        if psi > psi_thresh or ks_p < ks_thresh:
-            drifted_features.append((feature, psi, ks_p))
+            col = m["metric_id"].split("column=")[1].rstrip(")")
+            val = m.get("value")
+            if not isinstance(val, dict):
+                continue
 
-    return drifted_features
+            if val.get("drift_detected", False):
+                share = val.get("drift_share", 0.0)
+                drifted.append((col, share, share))
+    # when the context manager exits, tmpdir and its files are auto‑deleted
+    return drifted
