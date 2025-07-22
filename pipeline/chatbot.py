@@ -27,7 +27,7 @@ def ask_openai(
     system_prompt: str,
     model: str,
     temperature: float = 1,
-    max_tokens: int = 600,
+    max_tokens: int = 700,
     context: str = ""
 ) -> str:
     if not OPENAI_API_KEY:
@@ -233,9 +233,9 @@ def show_chatbot_sidebar():
 
             context += textwrap.dedent(f""" 
                 Drift detected in **{feature}**:
-                – Drift score: {score:.3f}
-                – Test used: {test_name}
-                – Status: {status}
+                Drift score: {score:.3f}
+                Test used: {test_name}
+                Status: {status}
                 """)
             
             drift_data.append({
@@ -279,9 +279,10 @@ def show_chatbot_sidebar():
             st.sidebar.markdown(f"🧠 {bot_reply}")
 
     if st.sidebar.button("Trigger Drift Check & Retrain (Locally)"):
-        with st.spinner("Running drift-aware pipeline..."):
-            result = drift_aware_pipeline()
-            if result["retrained"]:
-                st.sidebar.success("Model retrained due to detected drift.")
-            else:
-                st.sidebar.info("ℹ️ No retraining needed. Drift within acceptable range.")
+        with st.sidebar:
+            with st.spinner("Running drift-aware pipeline..."):
+                result = drift_aware_pipeline()
+        if result["retrained"]:
+            st.sidebar.success("Model retrained due to detected drift.")
+        else:
+            st.sidebar.info("ℹ️ No retraining needed. Drift within acceptable range.")

@@ -8,11 +8,16 @@ import json
 def run_training(data_path: str = "data/synthetic_credit_risk.csv"):
     return train_model(data_path)
 
+# creates pdf in model monitoring page
 @flow(name="credit_risk_pipeline")
 def credit_risk_pipeline(data_path: str = "data/synthetic_credit_risk.csv"):
     run_training(data_path)
-
-    return "Model trained and saved"
+    drift_report_path = run_data_drift_check(
+        reference_path="data/synthetic_credit_risk.csv",
+        current_path="artifacts/prediction_input_sample.csv",
+        output_path="reports/drift_report.html"
+    )
+    return drift_report_path
 
 
 @flow(name="drift_aware_pipeline")
@@ -22,8 +27,10 @@ def drift_aware_pipeline(
     current_path:   str = "artifacts/prediction_input_sample.csv",
     drift_html:     str = "artifacts/drift_report.html",
     drift_json:     str = "artifacts/drift_summary.json",
+    drift_share_threshold: float = 0.2,
 ):
-    # Run Evidently’s DataDriftPreset (writes JSON + HTML)
+
+    # Generate Evidently’s drift report
     run_data_drift_check(
         reference_path=reference_path,
         current_path=current_path,
@@ -34,39 +41,34 @@ def drift_aware_pipeline(
     with open(drift_json, "r") as f:
         summary = json.load(f)
 
-    # Find all features where drift_detected==True
-    drifted_features = []
-    for metric in summary.get("metrics", []):
-        mid = metric.get("metric_id", "")
-        if not mid.startswith("ValueDrift"):
-            continue
+    # Extract the overall drift share from the DriftedColumnsCount metric
+    overall_metric = next(
+        (m for m in summary["metrics"]
+         if m["metric_id"].startswith("DriftedColumnsCount")),
+        None
+    )
+    if overall_metric is None:
+        raise ValueError("No DriftedColumnsCount metric found in drift_summary.json")
 
-        # pull the payload from "metric", not "value"
-        payload = metric.get("metric", {})
-        if not isinstance(payload, dict):
-            continue
+    overall_share = overall_metric["value"]["share"]
 
-        if payload.get("drift_detected", False):
-            feature = mid.split("column=")[1].rstrip(")")
-            share   = payload.get("drift_share", 0.0)
-            drifted_features.append((feature, share))        
-
-    # Retrain if any drifted features
-    if drifted_features:
-        print(f"Drift detected in {len(drifted_features)} features, retraining…")
+    # Compare to threshold and retrain if exceeded
+    if overall_share > drift_share_threshold:
+        print(f"Overall drift {overall_share:.2%} > {drift_share_threshold:.2%}, retraining…")
         model_path = credit_risk_pipeline(data_path)
         return {
             "retrained": True,
             "model_path": model_path,
-            "drifted_features": drifted_features,
+            "drift_share": overall_share,
             "drift_report": drift_html,
         }
     else:
-        print("No significant drift detected.")
+        print(f"Overall drift {overall_share:.2%} ≤ {drift_share_threshold:.2%}, skipping retrain.")
         return {
             "retrained": False,
-            "drifted_features": [],
+            "drift_share": overall_share,
             "drift_report": drift_html,
         }
+    
 if __name__ == "__main__":
     credit_risk_pipeline()

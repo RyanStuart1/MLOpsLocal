@@ -41,7 +41,7 @@ def run_data_drift_check(reference_path, current_path, output_path):
                 df.drop(columns=[col], inplace=True)
 
     # Build & run Evidently preset
-    report = Report(metrics=[DataDriftPreset(drift_share=0.2)])
+    report = Report(metrics=[DataDriftPreset()])
     result = report.run(reference_data, current_data)
 
     # Save HTML report

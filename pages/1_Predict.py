@@ -19,7 +19,7 @@ st.markdown("Fill in the applicant's loan and financial info to assess default r
 
 # Input fields with safe, bounded values
 age = st.number_input("Age", min_value=18, max_value=100, value=30)
-credit_score = st.slider("Credit Score", min_value=300, max_value=850, value=650)
+credit_score = st.slider("Credit Score", min_value=300, max_value=999, value=650)
 loan_amount = st.number_input("Loan Amount ($)", min_value=1000, max_value=100000, value=15000)
 loan_term_months = st.selectbox("Loan Term (months)", [12, 24, 36, 48, 60])
 employment_length = st.slider("Employment Length (years)", min_value=0, max_value=40, value=5)
