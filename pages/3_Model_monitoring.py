@@ -9,8 +9,10 @@ from pipeline.flow import credit_risk_pipeline
 from pipeline.chatbot import show_chatbot_sidebar
 import streamlit.components.v1 as components
 import math
+from pages_components.home_button import render_home_button
 
 st.set_page_config(page_title="Model Comparison", layout="wide")
+render_home_button()
 st.title("Compare ML Models from Registry")
 
 client = MlflowClient()

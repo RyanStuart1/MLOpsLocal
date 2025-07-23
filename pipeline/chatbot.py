@@ -80,7 +80,7 @@ def show_chatbot_sidebar():
             st.sidebar.error(f"Could not parse upload: {e}")
             summary = None
     else:
-        # no upload → try on-disk
+        # no upload, try on-disk
         try:
             with open("artifacts/drift_summary.json", "r") as f:
                 summary = json.load(f)

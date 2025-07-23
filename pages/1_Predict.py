@@ -3,6 +3,7 @@ import joblib
 import numpy as np
 import os
 from pipeline.chatbot import show_chatbot_sidebar
+from pages_components.home_button import render_home_button
 
 # Load trained model
 model_path = "models/model.pkl"
@@ -12,8 +13,9 @@ if not os.path.exists(model_path):
 
 model = joblib.load(model_path)
 
-st.title("Credit Risk Prediction")
 st.set_page_config(layout="centered")
+render_home_button()
+st.title("Credit Risk Prediction")
 
 st.markdown("Fill in the applicant's loan and financial info to assess default risk.")
 

@@ -9,9 +9,11 @@ from pipeline.metrics import get_model_metrics
 from pipeline.chatbot import show_chatbot_sidebar
 from pipeline.shap_analysis import compute_shap_native
 import json
+from pages_components.home_button import render_home_button
 
-st.title("Model Insights")
 st.set_page_config(layout="wide")
+render_home_button()
+st.title("Model Insights")
 
 client    = MlflowClient()
 model_name = "credit-risk-model"  # must match model version

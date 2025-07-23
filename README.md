@@ -71,6 +71,8 @@
 >│   ├── 1_Predict.py
 >│   ├── 2_Model_insights.py
 >│   └── 3_Model_monitoring.py
+>├── pages_components/
+>│   └── home_button.py     # home button 
 >├── data/                  # CSV datasets
 >│   └── data.csv
 >├── mlruns/                # MLflow tracking directory
@@ -80,7 +82,11 @@
 >│   ├── train.py           # Model training
 >│   ├── evaluate.py        # Model evaluation
 >│   ├── preprocess.py      # Feature engineering
->│   └── model_drift.py     # Drift monitoring
+>│   ├── model_drift.py     # Drift monitoring
+>│   ├── chatbot.py         # Open AI integrated LLM
+>│   ├── metrics.py         # Model accuracy + Matrices
+>│   ├── pdf_report.py      # PDF report generation
+>│   └── shap_analysis.py   # Shap analysis
 >├── .gitignore             # Git ignore rules
 >├── prefect.yaml           # Prefect deployment config
 >├── README.md              # Project documentation
