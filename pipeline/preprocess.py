@@ -1,6 +1,6 @@
 from sklearn.model_selection import train_test_split
 
-def preprocess_data(df):
+def preprocess_data(df, random_state=None):
     """
     Split into train / validation / test sets:
         train: 0.60
@@ -15,13 +15,13 @@ def preprocess_data(df):
         x, y,
         test_size=0.2,
         stratify=y,
-        random_state=42
+        random_state=random_state
     )
     # From the remaining 80%, split out validation (20% of total = 25% of 80%)
     x_train, x_val, y_train, y_val = train_test_split(
         x_train_val, y_train_val,
         test_size=0.25,
         stratify=y_train_val,
-        random_state=42
+        random_state=random_state
     )
     return x_train, x_val, x_test, y_train, y_val, y_test

@@ -3,6 +3,7 @@ import os
 from shap import Explanation, plots
 from mlflow.tracking import MlflowClient
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import pandas as pd
 from pipeline.metrics import get_model_metrics
@@ -68,11 +69,16 @@ with col4:
             metrics.get("test_accuracy", 0) or 0,
             metrics.get("test_roc_auc", 0)  or 0,
         ]
+
+        gradient = LinearSegmentedColormap.from_list("orange_red", ["#ff6a00", "#ff0000"])
+        colors = [gradient(i / (len(values)-1)) for i in range(len(values))]
+
         fig, ax = plt.subplots(figsize=(4,3))
-        ax.bar(labels, values, width=0.6)
+        ax.bar(labels, values, color=colors, width=0.6)
         ax.set_ylim(0,1)
         ax.set_ylabel("Score")
         ax.set_title("Latest Model Performance")
+        
         for i, v in enumerate(values):
             ax.text(i, v + 0.02, f"{v:.2f}", ha="center", fontweight="bold")
         st.pyplot(fig)

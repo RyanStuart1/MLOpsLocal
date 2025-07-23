@@ -1,6 +1,7 @@
 def train_model(data_path: str = "data/synthetic_credit_risk.csv"):
     import os    
     import pandas as pd
+    import numpy as np
     import mlflow
     from mlflow.models.signature import infer_signature
     import joblib
@@ -9,6 +10,8 @@ def train_model(data_path: str = "data/synthetic_credit_risk.csv"):
     from xgboost import XGBClassifier
     from pipeline.preprocess import preprocess_data
     from pipeline.evaluate import evaluate_model
+    import random
+    import hashlib
 
 
     # Creates missing directories if they do not exist
@@ -16,11 +19,17 @@ def train_model(data_path: str = "data/synthetic_credit_risk.csv"):
     os.makedirs("mlruns", exist_ok=True)
     os.makedirs("artifacts", exist_ok=True)
 
+    seed = random.randint(1, 10000)
+    random.seed(seed)
+    np.random.seed(seed)
     # Load data
     df = pd.read_csv(data_path)
 
     # Preprocess: split into train/test sets
-    x_train, x_val, x_test, y_train, y_val, y_test = preprocess_data(df)
+    x_train, x_val, x_test, y_train, y_val, y_test = preprocess_data(df, random_state=seed)
+
+    # Log a hash of the training features to track data version and ensure reproducibility
+    train_hash = hashlib.sha256(pd.util.hash_pandas_object(x_train, index=True).values).hexdigest()
 
     # Save training sample for drift reference
     x_train.to_csv("artifacts/train_features_sample.csv", index=False)
@@ -32,17 +41,17 @@ def train_model(data_path: str = "data/synthetic_credit_risk.csv"):
 
     # Define hyperparameter grid
     param_grid = {
-        'n_estimators': [100, 200],
-        'max_depth': [3, 4, 5],
+        'n_estimators': [100, 200, 300],
+        'max_depth': [3, 4, 5, 6],
         'learning_rate': [0.01, 0.05, 0.1, 0.2],
-        'subsample': [0.6, 0.8],
-        'colsample_bytree': [0.6, 0.8],
+        'subsample': [0.6, 0.8, 1.0],
+        'colsample_bytree': [0.6, 0.8, 1.0],
     }
 
     # Create base model
     xgb = XGBClassifier(
         eval_metric='logloss',
-        random_state=42,
+        random_state=seed,
         n_jobs=-1, 
     )
 
@@ -71,6 +80,8 @@ def train_model(data_path: str = "data/synthetic_credit_risk.csv"):
     with mlflow.start_run():
         mlflow.log_param("model", "XGBoost")  # Optional: for tagging model name
         mlflow.log_params(grid_search.best_params_)  # Logs best hyperparameters
+        mlflow.log_param("random_seed", seed)
+        mlflow.log_param("x_train_hash", train_hash)
 
         mlflow.log_metric("val_accuracy", val_metrics["accuracy"])
         mlflow.log_metric("val_roc_auc", val_metrics["roc_auc"])

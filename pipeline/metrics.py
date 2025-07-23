@@ -33,7 +33,7 @@ def log_confusion_matrix(
         cm,
         annot=True,
         fmt="d",
-        cmap="Blues",
+        cmap="Oranges",
         xticklabels=["No Default", "Default"],
         yticklabels=["No Default", "Default"]
     )

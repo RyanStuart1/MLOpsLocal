@@ -17,7 +17,7 @@ st.title("Compare ML Models from Registry")
 
 client = MlflowClient()
 
-# Step 1: List all registered models
+# List all registered models
 # Use search_registered_models if list_registered_models() is unavailable
 try:
     models = client.search_registered_models()
@@ -29,24 +29,24 @@ model_names = [m.name for m in models]
 
 selected_model = st.selectbox("📦 Select a model", model_names)
 
-# Step 2: Get versions for the selected model
+# Get versions for the selected model
 all_versions = client.search_model_versions(f"name='{selected_model}'")
 version_options = sorted([int(v.version) for v in all_versions], reverse=True)
 
-# Step 3: User selects exactly 2 versions to compare
+# User selects exactly 2 versions to compare
 selected_versions = st.multiselect(
     "Select exactly 2 versions to compare",
     version_options,
     default=version_options[:2] if len(version_options) >= 2 else version_options
 )
 
-# Step 4: Map version -> (run_id, stage)
+# Map version -> (run_id, stage)
 version_info = {
     int(v.version): {"run_id": v.run_id, "stage": v.current_stage}
     for v in all_versions if int(v.version) in selected_versions
 }
 
-# Step 5: Helper to get metrics
+# Helper to get metrics
 def get_metrics(run_id):
     run = client.get_run(run_id)
     metrics = run.data.metrics
@@ -57,7 +57,7 @@ def get_metrics(run_id):
         "val_roc_auc": metrics.get("val_roc_auc"),
     }
 
-# Step 6: Get metrics and stage for each version
+# Get metrics and stage for each version
 if len(selected_versions) == 2:
 
     v1, v2 = selected_versions
@@ -66,7 +66,7 @@ if len(selected_versions) == 2:
     metrics1 = get_metrics(info1["run_id"])
     metrics2 = get_metrics(info2["run_id"])
 
-    # Step 7: Show side-by-side comparison
+    # Show side-by-side comparison
     col1, col2 = st.columns(2)
 
     with col1:
