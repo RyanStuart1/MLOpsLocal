@@ -224,11 +224,12 @@ def show_chatbot_sidebar():
 
         # Build the detailed drift_data list for all features
         drift_data = []
+
+        # pick your test (KS vs Chi‑square) from your tests mapping
         for feature, score in drift_scores.items():
-            # pick your test (KS vs Chi‑square) from your tests mapping
             test_name = tests.get(feature, ("UnknownTest", None))[0]
-            # define status however you like, e.g.:
-            status = "Significant drift" if score < 0.2 else "No significant drift"
+            is_drift = isinstance(score, (int, float)) and score < 0.05
+            status = "Significant drift" if is_drift else "No significant drift"
             context += f"\n– **{feature}** drift {score:.3f}, test used: {test_name}\n"
 
             context += textwrap.dedent(f""" 
