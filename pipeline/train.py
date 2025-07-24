@@ -1,27 +1,35 @@
-def train_model(data_path: str = "data/synthetic_credit_risk.csv"):
-    import os    
-    import pandas as pd
-    import numpy as np
-    import mlflow
-    from mlflow.models.signature import infer_signature
-    import joblib
-    from sklearn.model_selection import GridSearchCV
-    from pipeline.metrics import log_confusion_matrix
-    from xgboost import XGBClassifier
-    from pipeline.preprocess import preprocess_data
-    from pipeline.evaluate import evaluate_model
-    import random
-    import hashlib
+import os    
+import pandas as pd
+import numpy as np
+import mlflow
+from mlflow.models.signature import infer_signature
+import joblib
+from sklearn.model_selection import GridSearchCV
+from pipeline.metrics import log_confusion_matrix
+from xgboost import XGBClassifier
+from pipeline.preprocess import preprocess_data
+from pipeline.evaluate import evaluate_model
+import random
+import hashlib
+import json
 
+def train_model(data_path: str = "data/synthetic_credit_risk.csv", seed: int = None):
 
     # Creates missing directories if they do not exist
     os.makedirs("models", exist_ok=True)
     os.makedirs("mlruns", exist_ok=True)
     os.makedirs("artifacts", exist_ok=True)
 
-    seed = random.randint(1, 10000)
+    if seed is None:
+        seed = random.randint(1, 10000)
     random.seed(seed)
     np.random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+
+    # Persist the seed used
+    with open("artifacts/seed.json", "w") as f:
+        json.dump({"random_seed": seed}, f, indent=2)
+
     # Load data
     df = pd.read_csv(data_path)
 

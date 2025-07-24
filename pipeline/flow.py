@@ -4,15 +4,17 @@ from pipeline.model_drift import run_data_drift_check
 from pipeline.shap_analysis import generate_latest_shap_summary
 import pandas as pd
 import json
+import os
+from typing import Optional
 
 @task
-def run_training(data_path: str = "data/synthetic_credit_risk.csv"):
-    return train_model(data_path)
+def run_training(data_path: str = "data/synthetic_credit_risk.csv", seed: Optional[int] = None):
+    return train_model(data_path, seed=seed)
 
 # creates pdf in model monitoring page
 @flow(name="credit_risk_pipeline")
-def credit_risk_pipeline(data_path: str = "data/synthetic_credit_risk.csv"):
-    run_training(data_path)
+def credit_risk_pipeline(data_path: str = "data/synthetic_credit_risk.csv", seed: Optional[int] = None):
+    run_training(data_path, seed=seed)
     drift_report_path = run_data_drift_check(
     reference_path="data/synthetic_credit_risk.csv",
     current_path="artifacts/prediction_input_sample.csv",
@@ -59,10 +61,19 @@ def drift_aware_pipeline(
     # Always generate SHAP summary with archive
     generate_latest_shap_summary(model_name=model_name, sample_data=sample_data)
 
+    # Load previous seed if it exists
+    seed: Optional[int] = None
+    seed_path = "artifacts/seed.json"
+    if os.path.exists(seed_path):
+        with open(seed_path) as f:
+            seed_data = json.load(f)
+            seed = seed_data.get("random_seed")
+
+
     # Compare to threshold and retrain if exceeded
     if overall_share > drift_share_threshold:
         print(f"Overall drift {overall_share:.2%} > {drift_share_threshold:.2%}, retraining…")
-        model_path = credit_risk_pipeline(data_path)
+        model_path = credit_risk_pipeline(data_path, seed=seed)
         return {
             "retrained": True,
             "model_path": model_path,
@@ -79,5 +90,4 @@ def drift_aware_pipeline(
     
 
 if __name__ == "__main__":
-    credit_risk_pipeline()
     drift_aware_pipeline()
