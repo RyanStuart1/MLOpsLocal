@@ -103,13 +103,17 @@ def show_chatbot_sidebar():
     metrics = get_model_metrics()
     # Gather drift scores from metrics
     drift_scores = {}
-    for m in summary.get("metrics", []):
-        mid = m["metric_id"]  # e.g. "ValueDrift(column=age)"
-        if not mid.startswith("ValueDrift"):
-            continue
-        # pull out the text between "column=" and ")"
-        feature = mid[mid.find("column=") + len("column=") : -1]
-        drift_scores[feature] = m["value"]
+    if summary:      
+        for m in summary.get("metrics", []):
+            mid = m["metric_id"]  # e.g. "ValueDrift(column=age)"
+            if not mid.startswith("ValueDrift"):
+                continue
+            # pull out the text between "column=" and ")"
+            feature = mid[mid.find("column=") + len("column=") : -1]
+            drift_scores[feature] = m["value"]
+    else:
+        st.sidebar.warning("⚠️ Drift summary not found. Please run the pipeline or upload the file.")
+        return
 
     # Gather test results from tests
     #    e.g. [{"metric_id":"KolmogorovSmirnovTest(column=age)", "value":{"p_value":0.02…}}, …]

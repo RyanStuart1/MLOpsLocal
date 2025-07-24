@@ -1,6 +1,7 @@
 from prefect import flow, task
-from pipeline.train import train_model  # assume you wrap training in a function
-from pipeline.model_drift import run_data_drift_check, has_significant_drift
+from pipeline.train import train_model 
+from pipeline.model_drift import run_data_drift_check
+from pipeline.shap_analysis import generate_latest_shap_summary
 import pandas as pd
 import json
 
@@ -13,12 +14,11 @@ def run_training(data_path: str = "data/synthetic_credit_risk.csv"):
 def credit_risk_pipeline(data_path: str = "data/synthetic_credit_risk.csv"):
     run_training(data_path)
     drift_report_path = run_data_drift_check(
-        reference_path="data/synthetic_credit_risk.csv",
-        current_path="artifacts/prediction_input_sample.csv",
-        output_path="reports/drift_report.html"
+    reference_path="data/synthetic_credit_risk.csv",
+    current_path="artifacts/prediction_input_sample.csv",
+    output_path="reports/drift_report.html"
     )
     return drift_report_path
-
 
 @flow(name="drift_aware_pipeline")
 def drift_aware_pipeline(
@@ -28,6 +28,7 @@ def drift_aware_pipeline(
     drift_html:     str = "artifacts/drift_report.html",
     drift_json:     str = "artifacts/drift_summary.json",
     drift_share_threshold: float = 0.2,
+    model_name: str = "credit-risk-model"
 ):
 
     # Generate Evidently’s drift report
@@ -52,6 +53,12 @@ def drift_aware_pipeline(
 
     overall_share = overall_metric["value"]["share"]
 
+    # Load sample data for SHAP
+    sample_data = pd.read_csv(current_path)
+
+    # Always generate SHAP summary with archive
+    generate_latest_shap_summary(model_name=model_name, sample_data=sample_data)
+
     # Compare to threshold and retrain if exceeded
     if overall_share > drift_share_threshold:
         print(f"Overall drift {overall_share:.2%} > {drift_share_threshold:.2%}, retraining…")
@@ -70,5 +77,7 @@ def drift_aware_pipeline(
             "drift_report": drift_html,
         }
     
+
 if __name__ == "__main__":
     credit_risk_pipeline()
+    drift_aware_pipeline()

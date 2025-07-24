@@ -7,6 +7,8 @@ import pandas as pd
 import os
 import json
 import tempfile
+from datetime import datetime
+import shutil
 
 # batch drift
 def calculate_psi(expected, actual, buckets=10):
@@ -47,7 +49,7 @@ def run_data_drift_check(reference_path, current_path, output_path):
     # Save HTML report
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     result.save_html(output_path)
-
+    
     # Load Evidently JSON and augment with our KS tests
     summary = json.loads(result.json())
 
@@ -81,6 +83,14 @@ def run_data_drift_check(reference_path, current_path, output_path):
     with open("artifacts/drift_summary.json", "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
 
+    archive_dir = "artifacts/drift_summary_archive"
+    os.makedirs(archive_dir, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    archive_path = os.path.join(archive_dir, f"drift_summary_{timestamp}.json")
+
+    shutil.copy("artifacts/drift_summary.json", archive_path)
+
     # Return path to HTML report
     return output_path
 
@@ -100,8 +110,6 @@ def has_significant_drift(reference_df, current_df) -> list:
         current_df.to_csv(curr_path, index=False)
 
         # run the Evidently drift check task
-        # you might want to point HTML somewhere permanent,
-        # e.g. "artifacts/drift_report.html"
         run_data_drift_check(
             reference_path=ref_path,
             current_path=curr_path,

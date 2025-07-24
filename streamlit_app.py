@@ -131,7 +131,7 @@ st.markdown("""
         <li>Predict loan default risk</li>
         <li>View model performance metrics</li>
         <li>Explore insights about the dataset and model</li>
-        <li>Stream and Batch Model monitoring</li>
+        <li>Batch Model monitoring</li>
     </ul>
     <p>Use the cards below or the sidebar to navigate between pages.</p>
 </div>

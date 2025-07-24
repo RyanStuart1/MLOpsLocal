@@ -11,6 +11,10 @@ from pipeline.chatbot import show_chatbot_sidebar
 from pipeline.shap_analysis import compute_shap_native
 import json
 from pages_components.home_button import render_home_button
+from datetime import datetime
+import glob
+import re
+import seaborn as sns
 
 st.set_page_config(layout="wide")
 render_home_button()
@@ -199,8 +203,78 @@ if st.button("🔍 Compare SHAP for Two Versions"):
         }
         for i in range(len(feats_ord))
     ]
-    os.makedirs("artifacts", exist_ok=True)
-    with open("artifacts/shap_summary.json", "w") as f:
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    archive_dir = "artifacts/shap_summary_manual"
+    os.makedirs(archive_dir, exist_ok=True)
+
+    archive_path = os.path.join(archive_dir, f"shap_summary_manual_comparison_{ts}.json")
+    with open(archive_path, "w", encoding="utf-8") as f:
         json.dump(shap_summary, f, indent=2)
 
+# ———————————————————— SHAP LINEAGE SECTION ————————————————————
+st.markdown("---")
+st.header("SHAP Lineage Over Time")
+
+# List all archived summary files
+archive_dir = "artifacts/shap_summary_archive"
+summary_files = sorted(glob.glob(os.path.join(archive_dir, "*.json")))
+
+if not summary_files:
+    st.info("No SHAP summary archive files found.")
+else:
+    lineage_df = None
+    for path in summary_files:
+        # Parse version and timestamp from filename
+        fname = os.path.basename(path)
+        # Parse using regex
+        match = re.match(r"shap_summary_v(\d+)_vs_v(\d+)_(\d{8}_\d{6})\.json", fname)
+        if match:
+            v1, v2, ts = match.groups()
+            label = f"{v2} vs {v1} Δ"
+        else:
+            label = fname
+
+        # Load the summary
+        with open(path) as f:
+            shap_list = json.load(f)
+
+        df = pd.DataFrame(shap_list)
+        df["run"] = label
+
+        # Accumulate into wide format
+        pivot = df[["feature", "delta", "run"]].pivot(index="feature", columns="run", values="delta")
+        if lineage_df is None:
+            lineage_df = pivot
+        else:
+            lineage_df = lineage_df.join(pivot, how="outer")
+
+    # Heatmap with color key
+    st.subheader("Delta SHAP Lineage Heatmap")
+    fig, ax = plt.subplots(figsize=(len(lineage_df.columns)*1.2, len(lineage_df)*0.6))
+    sns.heatmap(
+        lineage_df.fillna(0),
+        annot=True,
+        fmt=".4f",
+        cmap="RdBu_r",
+        center=0,
+        linewidths=0.5,
+        cbar_kws={"label": "Δ mean(|SHAP value|)"}
+    )
+    ax.set_title("SHAP Δ per Feature Across Runs")
+    plt.xticks(rotation=45, ha='right')
+    plt.yticks(rotation=0)
+    st.pyplot(fig)
+
+    st.subheader("Select Feature to Plot Over Time")
+    selected_feat = st.selectbox("Choose a feature", lineage_df.index.tolist())
+    series = lineage_df.loc[selected_feat].fillna(0)
+
+    fig, ax = plt.subplots(figsize=(8, 3))
+    ax.plot(series.index, series.values, marker='o')
+    ax.set_xticklabels(series.index, rotation=45, ha='right')
+    ax.set_title(f"SHAP Delta Over Time: {selected_feat}")
+    ax.set_ylabel("Δ SHAP (v_latest - v_previous)")
+    ax.axhline(0, color='gray', linestyle='--')
+    st.pyplot(fig)
+# ———————————————————— SHAP LINEAGE SECTION ————————————————————
 show_chatbot_sidebar()
