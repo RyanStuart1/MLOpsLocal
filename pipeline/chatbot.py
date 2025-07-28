@@ -7,13 +7,24 @@ from dotenv import load_dotenv
 from pipeline.flow import drift_aware_pipeline
 from pipeline.metrics import get_model_metrics
 from pipeline.pdf_report import generate_pdf_report
+from pipeline.rag_utils import get_rag_context, load_and_embed_docs
 import json
 import textwrap
 
+@st.cache_resource
+def get_rag_db():
+    return load_and_embed_docs()
+
 SYSTEM_PROMPT = textwrap.dedent("""\
 You are a highly skilled credit risk model auditor writing for a regulatory audience.
+
+Use all available information to answer accurately — including PDF reference documents (if available), data drift summaries, SHAP feature comparisons, and performance metrics.
+
+When relevant, prioritize factual details grounded in reference documents (e.g., PDFs or reports). Otherwise, rely on your own expertise and the provided context.
+
 **Do not apologize or mention inability to generate PDFs.**  
 Whenever asked for a summary in PDF format, simply produce the summary text.
+
 Answer user questions concisely and professionally. If they ask about drift or performance, refer to the context you’ve been given.
 """)
 
@@ -63,29 +74,38 @@ def show_chatbot_sidebar():
     )
     st.sidebar.info(f"Using model: `{current_model}`")
 
+    # 📄 Optional RAG PDF upload
+    st.sidebar.markdown("### 📄 Upload Reference PDF for RAG")
+    rag_file = st.sidebar.file_uploader("Upload PDF for document-based answers", type=["pdf"])
+
+    if rag_file is not None:
+        rag_dir = "rag_docs"
+        os.makedirs(rag_dir, exist_ok=True)
+        rag_path = os.path.join(rag_dir, rag_file.name)
+        with open(rag_path, "wb") as f:
+            f.write(rag_file.getbuffer())
+        st.sidebar.success(f"✅ Uploaded: {rag_file.name}")
+
+        # Rebuild RAG index only when new doc is uploaded
+        st.cache_resource.clear()
+        st.session_state.rag_db = load_and_embed_docs()
+
+    # Always load RAG DB if not already present
+    if "rag_db" not in st.session_state or st.session_state.rag_db is None:
+        st.session_state.rag_db = get_rag_db()
+
+
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    uploaded = st.sidebar.file_uploader("Upload file here!", type=["json"])
     summary = None
     context = ""
 
-    if uploaded is not None:
-        # Only JSON for drift summaries
-        try:
-            text = uploaded.getvalue().decode("utf-8")
-            summary = json.loads(text)
-            st.sidebar.success("Uploaded JSON parsed")
-        except Exception as e:
-            st.sidebar.error(f"Could not parse upload: {e}")
-            summary = None
-    else:
-        # no upload, try on-disk
-        try:
-            with open("artifacts/drift_summary.json", "r") as f:
-                summary = json.load(f)
-        except FileNotFoundError:
-            summary = None
+    try:
+        with open("artifacts/drift_summary.json", "r") as f:
+            summary = json.load(f)
+    except FileNotFoundError:
+        st.sidebar.warning("⚠️ Drift summary not found. Please run the pipeline.")
 
     try:
         shap_summary = json.load(open("artifacts/shap_summary.json", "r"))
@@ -97,7 +117,6 @@ def show_chatbot_sidebar():
             d       = row["delta"]
             context += f" • {feature}: v1={v1:.3f}, v2={v2:.3f}, Δ={d:.3f}\n"
     except FileNotFoundError:
-        # no SHAP file yet
         pass
     
     metrics = get_model_metrics()
@@ -113,7 +132,6 @@ def show_chatbot_sidebar():
             drift_scores[feature] = m["value"]
     else:
         st.sidebar.warning("⚠️ Drift summary not found. Please run the pipeline or upload the file.")
-        return
 
     # Gather test results from tests
     #    e.g. [{"metric_id":"KolmogorovSmirnovTest(column=age)", "value":{"p_value":0.02…}}, …]
@@ -150,24 +168,47 @@ def show_chatbot_sidebar():
         # Detect retraining intent
         lowered = user_input.lower()
         retrain_keywords = ["retrain", "drift check", "update model", "refresh model"]
+        rag_keywords = ["rag", "pdf", "document", "report", "reference"]
 
         if any(word in lowered for word in retrain_keywords):
             with st.sidebar:
                 with st.spinner("Running drift-aware pipeline..."):
-                        result = drift_aware_pipeline()
-                        if result["retrained"]:
-                            reply = "Significant drift detected and the model was retrained."
-                        else:
-                            reply = "ℹ️ No retraining needed. Drift was within acceptable range."
+                    result = drift_aware_pipeline()
+                    if result["retrained"]:
+                        reply = "Significant drift detected and the model was retrained."
+                    else:
+                        reply = "ℹ️ No retraining needed. Drift was within acceptable range."
         else:
+            # Optionally use RAG if query is document-related
+            use_rag = any(word in lowered for word in rag_keywords)
+
             with st.sidebar:
                 with st.spinner("Thinking..."):
+                    if use_rag:
+                        try:
+                            if "rag_db" not in st.session_state or st.session_state.rag_db is None:
+                                st.session_state.rag_db = get_rag_db()
+
+                            if st.session_state.rag_db is not None:
+                                rag_context = get_rag_context(user_input, st.session_state.rag_db)
+                                combined_context = f"{rag_context}\n\n{context}"
+                            else:
+                                st.sidebar.warning("RAG index not available.")
+                                combined_context = context
+
+                        except Exception as e:
+                            st.sidebar.error(f"RAG failed: {e}")
+                            combined_context = context  
+                    else:
+                        combined_context = context
+
                     raw_reply = ask_openai(
                         user_input,
                         system_prompt=SYSTEM_PROMPT, 
                         model=current_model, 
-                        context=context
+                        context=combined_context
                     )
+
                     if "Here's the summary" in raw_reply:
                         reply = raw_reply.split("Here's the summary:", 1)[1].strip()
                     else:

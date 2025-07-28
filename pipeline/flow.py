@@ -29,7 +29,7 @@ def drift_aware_pipeline(
     current_path:   str = "artifacts/prediction_input_sample.csv",
     drift_html:     str = "artifacts/drift_report.html",
     drift_json:     str = "artifacts/drift_summary.json",
-    drift_share_threshold: float = 0.2,
+    drift_share_threshold: float = 0.3,
     model_name: str = "credit-risk-model"
 ):
 

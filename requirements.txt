@@ -18,8 +18,15 @@ prefect>=2.0
 fastapi
 uvicorn[standard]
 
-# Dashboard (optional)
+# Dashboard
 streamlit
 
 # Dev/Optional
 python-dotenv
+
+#RAG
+langchain
+langchain-community
+faiss-cpu
+unstructured
+tiktoken

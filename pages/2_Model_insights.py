@@ -246,7 +246,9 @@ else:
         if lineage_df is None:
             lineage_df = pivot
         else:
-            lineage_df = lineage_df.join(pivot, how="outer")
+            # Only keep columns from pivot that aren't already in lineage_df
+            new_cols = [col for col in pivot.columns if col not in lineage_df.columns]
+            lineage_df = pd.concat([lineage_df, pivot[new_cols]], axis=1)
 
     # Heatmap with color key
     st.subheader("Delta SHAP Lineage Heatmap")
