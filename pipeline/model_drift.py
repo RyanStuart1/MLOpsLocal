@@ -91,8 +91,29 @@ def run_data_drift_check(reference_path, current_path, output_path):
 
     shutil.copy("artifacts/drift_summary.json", archive_path)
 
-    # Return path to HTML report
-    return output_path
+    # Parse drift info for PDF
+    drift_data = []
+    for m in summary.get("metrics", []):
+        if not m.get("metric_id", "").startswith("ValueDrift"):
+            continue
+
+        col = m["metric_id"].split("column=")[1].rstrip(")")
+        val = m.get("value")
+        if not isinstance(val, dict):
+            continue
+
+        score = val.get("drift_score", "n/a")
+        detected = val.get("drift_detected", False)
+        test_name = m.get("test", "UnknownTest")
+
+        drift_data.append({
+            "feature": col,
+            "score": score,
+            "test_used": test_name,
+            "status": "Significant drift" if detected else "No significant drift"
+        })
+
+    return drift_data
 
 def has_significant_drift(reference_df, current_df) -> list:
     """
