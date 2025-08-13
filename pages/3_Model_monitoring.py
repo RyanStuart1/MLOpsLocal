@@ -192,15 +192,24 @@ st.markdown("---")
 st.title("Data Drift (evidently) Batch processing")
 
 if st.button("Run pipeline & refresh report"):
-    # this will execute your Prefect flow locally
-    report_path = credit_risk_pipeline()
+    # Run the pipeline and get the report path
+    result = credit_risk_pipeline()
+    report_path = result if isinstance(result, str) else result[0]
     st.success(f"Pipeline complete! Report at: {report_path}")
 
-    # load and embed
+    # Load and embed the report
     with open(report_path, "r", encoding="utf-8") as f:
         drift_html = f.read()
     components.html(drift_html, height=800, scrolling=True)
+
 else:
-    st.info("Click the button to run the pipeline and view the latest drift report.")
+    # Try to load the existing drift report without rerunning the pipeline
+    report_path = "artifacts/drift_report.html"
+    if os.path.exists(report_path):
+        with open(report_path, "r", encoding="utf-8") as f:
+            drift_html = f.read()
+        components.html(drift_html, height=800, scrolling=True)
+    else:
+        st.info("Drift report not found. Click the button to generate it.")
 
 show_chatbot_sidebar()
