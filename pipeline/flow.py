@@ -90,4 +90,5 @@ def drift_aware_pipeline(
     
 
 if __name__ == "__main__":
+    train_model("data/synthetic_credit_risk.csv")
     drift_aware_pipeline()
