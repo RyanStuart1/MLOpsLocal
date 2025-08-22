@@ -83,8 +83,11 @@
 >│   ├── evaluate.py        # Model evaluation
 >│   ├── preprocess.py      # Feature engineering
 >│   ├── model_drift.py     # Drift monitoring
->│   ├── chatbot.py         # Open AI integrated LLM
 >│   ├── metrics.py         # Model accuracy + Matrices
+>│   ├── chatbot.py         # Open AI integrated LLM
+>│   ├── chatbot_engine.py  # Handles chatbot logic
+>│   ├── openai_helper.py   # openai API + logic
+>│   ├── rag_utils.py       # Retrieval Augmented Generation logic
 >│   ├── pdf_report.py      # PDF report generation
 >│   └── shap_analysis.py   # Shap analysis
 >├── .gitignore             # Git ignore rules
