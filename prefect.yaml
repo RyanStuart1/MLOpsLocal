@@ -27,7 +27,7 @@ deployments:
   tags: []
   concurrency_limit: null
   description: null
-  entrypoint: .\pipeline\flow.py:credit_risk_pipeline
+  entrypoint: .\pipeline\flow.py:drift_aware_pipeline
   parameters: {}
   work_pool:
     name: default
