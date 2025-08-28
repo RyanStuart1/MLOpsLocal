@@ -12,16 +12,16 @@ services:
       --timeout 120
       --log-level info
     envVars:
-      # OPTION A: ephemeral local sqlite + artifacts (lost on restart)
+      # Option A: ephemeral (data lost on redeploy/restart)
       - key: MLFLOW_BACKEND_STORE_URI
         value: sqlite:////tmp/mlflow.db
       - key: MLFLOW_ARTIFACT_ROOT
         value: /tmp/mlflow-artifacts
 
-      # OPTION B (better): external persistence on Free (no Render disk)
-      # - key: MLFLOW_BACKEND_STORE_URI    # e.g. postgresql://USER:PASS@HOST:PORT/DB
-      #   value: <postgres-connection-string>
-      # - key: MLFLOW_ARTIFACT_ROOT        # e.g. s3://bucket/path
+      # Option B: external persistence (recommended for Free plan)
+      # - key: MLFLOW_BACKEND_STORE_URI
+      #   value: postgresql://USER:PASS@HOST:PORT/DB
+      # - key: MLFLOW_ARTIFACT_ROOT
       #   value: s3://your-bucket/mlflow
       # - key: AWS_ACCESS_KEY_ID
       #   value: <key>
@@ -29,18 +29,8 @@ services:
       #   value: <secret>
       # - key: AWS_DEFAULT_REGION
       #   value: us-east-1
-      # - key: MLFLOW_S3_ENDPOINT_URL      # if using R2/MinIO/B2
+      # - key: MLFLOW_S3_ENDPOINT_URL
       #   value: https://<endpoint>
-
-  - type: web
-    name: mlops-fastapi
-    env: python
-    plan: free
-    buildCommand: pip install -U pip && pip install -r requirements.txt
-    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
-    envVars:
-      - key: MLFLOW_TRACKING_URI
-        fromService: { type: web, name: mlops-mlflow, property: host }
 
   - type: web
     name: mlops-streamlit
@@ -49,7 +39,5 @@ services:
     buildCommand: pip install -U pip && pip install -r requirements.txt
     startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0
     envVars:
-      - key: API_BASE_URL
-        fromService: { type: web, name: mlops-fastapi, property: host }
       - key: MLFLOW_TRACKING_URI
         fromService: { type: web, name: mlops-mlflow, property: host }
