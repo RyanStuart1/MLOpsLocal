@@ -5,18 +5,11 @@ services:
     plan: free
     buildCommand: pip install -U pip && pip install -r requirements.txt
     startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0
-    autoDeploy: true
     envVars:
       - key: API_BASE_URL
-        fromService:
-          type: web
-          name: mlops-fastapi
-          property: host
+        fromService: { type: web, name: mlops-fastapi, property: host }
       - key: MLFLOW_TRACKING_URI
-        fromService:
-          type: web
-          name: mlops-mlflow
-          property: host
+        fromService: { type: web, name: mlops-mlflow, property: host }
 
   - type: web
     name: mlops-fastapi
@@ -24,13 +17,9 @@ services:
     plan: free
     buildCommand: pip install -U pip && pip install -r requirements.txt
     startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
-    autoDeploy: true
     envVars:
       - key: MLFLOW_TRACKING_URI
-        fromService:
-          type: web
-          name: mlops-mlflow
-          property: host
+        fromService: { type: web, name: mlops-mlflow, property: host }
 
   - type: web
     name: mlops-mlflow
@@ -41,25 +30,16 @@ services:
       mlflow server
       --host 0.0.0.0
       --port $PORT
-      --backend-store-uri sqlite:////data/mlflow/mlflow.db
-      --default-artifact-root /data/mlflow/artifacts
-    disk:
-      name: mlflow-data
-      mountPath: /data
-      sizeGB: 2
+      --backend-store-uri sqlite:////tmp/mlflow.db
+      --default-artifact-root /tmp/mlflow-artifacts
+    # ⬆ no "disk" section
 
   - type: worker
     name: mlops-prefect-worker
     env: python
     plan: free
     buildCommand: pip install -U pip && pip install -r requirements.txt
-    # Adjust for your Prefect version. For Prefect 2.x:
     startCommand: prefect worker start --pool default-agent-pool --limit 1
     envVars:
-      - key: PREFECT_API_URL
-        value: http://127.0.0.1  # or your Prefect Cloud URL if you use Cloud
       - key: MLFLOW_TRACKING_URI
-        fromService:
-          type: web
-          name: mlops-mlflow
-          property: host
+        fromService: { type: web, name: mlops-mlflow, property: host }
