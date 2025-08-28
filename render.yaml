@@ -1,15 +1,36 @@
 services:
   - type: web
-    name: mlops-streamlit
+    name: mlops-mlflow
     env: python
     plan: free
-    buildCommand: pip install -U pip && pip install -r requirements.txt
-    startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0
+    buildCommand: pip install -U pip && pip install mlflow gunicorn
+    startCommand: >
+      gunicorn 'mlflow.server:app'
+      --bind 0.0.0.0:$PORT
+      --workers 1
+      --threads 2
+      --timeout 120
+      --log-level info
     envVars:
-      - key: API_BASE_URL
-        fromService: { type: web, name: mlops-fastapi, property: host }
-      - key: MLFLOW_TRACKING_URI
-        fromService: { type: web, name: mlops-mlflow, property: host }
+      # OPTION A: ephemeral local sqlite + artifacts (lost on restart)
+      - key: MLFLOW_BACKEND_STORE_URI
+        value: sqlite:////tmp/mlflow.db
+      - key: MLFLOW_ARTIFACT_ROOT
+        value: /tmp/mlflow-artifacts
+
+      # OPTION B (better): external persistence on Free (no Render disk)
+      # - key: MLFLOW_BACKEND_STORE_URI    # e.g. postgresql://USER:PASS@HOST:PORT/DB
+      #   value: <postgres-connection-string>
+      # - key: MLFLOW_ARTIFACT_ROOT        # e.g. s3://bucket/path
+      #   value: s3://your-bucket/mlflow
+      # - key: AWS_ACCESS_KEY_ID
+      #   value: <key>
+      # - key: AWS_SECRET_ACCESS_KEY
+      #   value: <secret>
+      # - key: AWS_DEFAULT_REGION
+      #   value: us-east-1
+      # - key: MLFLOW_S3_ENDPOINT_URL      # if using R2/MinIO/B2
+      #   value: https://<endpoint>
 
   - type: web
     name: mlops-fastapi
@@ -22,24 +43,13 @@ services:
         fromService: { type: web, name: mlops-mlflow, property: host }
 
   - type: web
-    name: mlops-mlflow
-    env: python
-    plan: free
-    buildCommand: pip install -U pip && pip install mlflow gunicorn
-    startCommand: >
-      mlflow server
-      --host 0.0.0.0
-      --port $PORT
-      --backend-store-uri sqlite:////tmp/mlflow.db
-      --default-artifact-root /tmp/mlflow-artifacts
-    # ⬆ no "disk" section
-
-  - type: worker
-    name: mlops-prefect-worker
+    name: mlops-streamlit
     env: python
     plan: free
     buildCommand: pip install -U pip && pip install -r requirements.txt
-    startCommand: prefect worker start --pool default-agent-pool --limit 1
+    startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0
     envVars:
+      - key: API_BASE_URL
+        fromService: { type: web, name: mlops-fastapi, property: host }
       - key: MLFLOW_TRACKING_URI
         fromService: { type: web, name: mlops-mlflow, property: host }
