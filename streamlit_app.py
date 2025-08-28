@@ -164,6 +164,24 @@ st.markdown("""
             <div>Model Monitoring</div>
         </div>
     </a>
+    <!-- MLflow -->
+    <a href="http://127.0.0.1:7000" target="_blank">
+        <div class="card">
+            <div class="card-icon-circle">
+                <i class="bi bi-database-fill-gear"></i>
+            </div>
+            <div>MLflow</div>
+        </div>
+    </a>
+    <!-- Prefect -->
+    <a href="http://127.0.0.1:4200" target="_blank">
+        <div class="card">
+            <div class="card-icon-circle">
+                <i class="bi bi-diagram-3-fill"></i>
+            </div>
+            <div>Prefect</div>
+        </div>
+    </a>
 </div>
 """, unsafe_allow_html=True)
 
